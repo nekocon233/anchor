@@ -375,6 +375,7 @@ function playSfx(scene: Phaser.Scene, key: AudioKey, volume = 0.5, config: Phase
 
 const throttledSfxTimes = new WeakMap<Phaser.Scene, Map<AudioKey, number>>();
 const loopingSfx = new WeakMap<Phaser.Scene, Map<AudioKey, Phaser.Sound.BaseSound>>();
+const audioFadingScenes = new WeakSet<Phaser.Scene>();
 
 function playThrottledSfx(
   scene: Phaser.Scene,
@@ -400,6 +401,8 @@ function setLoopingSfx(
   volume: number,
   config: Phaser.Types.Sound.SoundConfig = {},
 ) {
+  if (audioFadingScenes.has(scene)) return;
+
   const sceneLoops = loopingSfx.get(scene) ?? new Map<AudioKey, Phaser.Sound.BaseSound>();
   loopingSfx.set(scene, sceneLoops);
 
@@ -494,10 +497,12 @@ function destroySceneSounds(scene: Phaser.Scene, sounds: Phaser.Sound.BaseSound[
 }
 
 function fadeOutSceneAudio(scene: Phaser.Scene, duration: number, onComplete: () => void) {
+  audioFadingScenes.add(scene);
   const soundManager = scene.sound as Phaser.Sound.BaseSoundManager & { sounds?: Phaser.Sound.BaseSound[] };
   const sounds = [...(soundManager.sounds ?? [])].filter((sound) => !sound.pendingRemove);
   if (sounds.length === 0) {
     stopAllSceneAudio(scene);
+    audioFadingScenes.delete(scene);
     onComplete();
     return;
   }
@@ -522,6 +527,7 @@ function fadeOutSceneAudio(scene: Phaser.Scene, duration: number, onComplete: ()
     },
     onComplete: () => {
       destroySceneSounds(scene, sounds);
+      audioFadingScenes.delete(scene);
       onComplete();
     },
   });
@@ -1559,7 +1565,7 @@ class ExploreScene extends Phaser.Scene {
     let move = 0;
     if (this.cursors.left?.isDown || this.keys.a.isDown) move -= 1;
     if (this.cursors.right?.isDown || this.keys.d.isDown) move += 1;
-    const controlsLocked = this.dialogueActive || this.introFadeActive;
+    const controlsLocked = this.dialogueActive || this.introFadeActive || this.isChangingLevel;
     if (controlsLocked) move = 0;
 
     let tetherState = this.getAnchorTetherState(this.playerWorldX);
@@ -1604,7 +1610,11 @@ class ExploreScene extends Phaser.Scene {
     if (isWaveLocked) {
       this.facing = 1;
       this.player.setFlipX(false);
-      this.setPlayerAnim('player-doge');
+      if (isTethered) {
+        this.setPlayerAnim('player-idle');
+      } else {
+        this.setPlayerAnim('player-doge');
+      }
     } else if (move !== 0) {
       this.facing = move > 0 ? 1 : -1;
       this.player.setFlipX(this.facing < 0);
@@ -1641,6 +1651,7 @@ class ExploreScene extends Phaser.Scene {
     this.applyCharacterPose(this.player, key);
     this.lastPlayerAnim = key;
   }
+
 
   private handleInteractionInput() {
     if (this.isChangingLevel || this.dialogueActive || this.dialogueInputConsumed || this.introFadeActive) return;
