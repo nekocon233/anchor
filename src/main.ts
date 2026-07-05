@@ -176,10 +176,14 @@ let activeMusic: Phaser.Sound.BaseSound | null = null;
 
 type AudioKey = (typeof AUDIO_KEYS)[number];
 
+function getAudioAssetUrl(fileName: string) {
+  return `${import.meta.env.BASE_URL}audio/${fileName}`;
+}
+
 function getAudioUrl(key: AudioKey) {
   if (key.startsWith('amb_')) {
-    const sharedPreferredUrl = `/audio/${SHARED_AMBIENCE_AUDIO_KEY}.${AUDIO_PREFERRED_EXTENSION}`;
-    const sharedFallbackUrl = `/audio/${SHARED_AMBIENCE_AUDIO_KEY}.${AUDIO_FALLBACK_EXTENSION}`;
+    const sharedPreferredUrl = getAudioAssetUrl(`${SHARED_AMBIENCE_AUDIO_KEY}.${AUDIO_PREFERRED_EXTENSION}`);
+    const sharedFallbackUrl = getAudioAssetUrl(`${SHARED_AMBIENCE_AUDIO_KEY}.${AUDIO_FALLBACK_EXTENSION}`);
     const sharedUrl = getExistingAudioUrl(sharedPreferredUrl, sharedFallbackUrl, false);
     if (sharedUrl) {
       return sharedUrl;
@@ -187,16 +191,16 @@ function getAudioUrl(key: AudioKey) {
   }
 
   if (key.startsWith('anchor_drop_')) {
-    const sharedPreferredUrl = `/audio/${SHARED_ANCHOR_DROP_AUDIO_KEY}.${AUDIO_PREFERRED_EXTENSION}`;
-    const sharedFallbackUrl = `/audio/${SHARED_ANCHOR_DROP_AUDIO_KEY}.${AUDIO_FALLBACK_EXTENSION}`;
+    const sharedPreferredUrl = getAudioAssetUrl(`${SHARED_ANCHOR_DROP_AUDIO_KEY}.${AUDIO_PREFERRED_EXTENSION}`);
+    const sharedFallbackUrl = getAudioAssetUrl(`${SHARED_ANCHOR_DROP_AUDIO_KEY}.${AUDIO_FALLBACK_EXTENSION}`);
     const sharedUrl = getExistingAudioUrl(sharedPreferredUrl, sharedFallbackUrl, false);
     if (sharedUrl) {
       return sharedUrl;
     }
   }
 
-  const preferredUrl = `/audio/${key}.${AUDIO_PREFERRED_EXTENSION}`;
-  const fallbackUrl = `/audio/${key}.${AUDIO_FALLBACK_EXTENSION}`;
+  const preferredUrl = getAudioAssetUrl(`${key}.${AUDIO_PREFERRED_EXTENSION}`);
+  const fallbackUrl = getAudioAssetUrl(`${key}.${AUDIO_FALLBACK_EXTENSION}`);
   return getExistingAudioUrl(preferredUrl, fallbackUrl, true) ?? fallbackUrl;
 }
 
